@@ -1,0 +1,26 @@
+Transform:
+  - AWS::Serverless-2016-10-31
+
+Description: AWS SAM template for qld fuel prices project cloud infrastructure
+
+Resources:
+  # Create an S3 bucket to hold API data
+  FuelPriceData:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: fuel-price-data
+
+  # Lambda function fetch data from the API and store it in S3
+  FuelPriceFetcher:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambda/
+      Handler: fetcher.lambda_handler
+      Runtime: python3.12
+      # Allow the lambda to access our qld fuel token api
+      Policies:
+        - AmazonSSMReadOnlyAccess
+
+    Environment:
+      Variables:
+        S3Bucket: !Ref FuelPriceData
