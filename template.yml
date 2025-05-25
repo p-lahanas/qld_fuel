@@ -4,23 +4,71 @@ Transform:
 Description: AWS SAM template for qld fuel prices project cloud infrastructure
 
 Resources:
+  # Create an IAM role to allow our lambdas access to required resources
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: LambdaExecutionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - ssm:Describe*
+                  - ssm:Get*
+                  - ssm:List*
+                Resource: "*"
+
   # Create an S3 bucket to hold API data
   FuelPriceData:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: fuel-price-data
+      AccessControl: Private
 
-  # Lambda function fetch data from the API and store it in S3
-  FuelPriceFetcher:
+  # Lambda to fetch our reference data (once daily) e.g. GetBrands
+  FuelPriceReferenceDataFetcher:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: lambda/
-      Handler: fetcher.lambda_handler
+      Handler: reference_data.lambda_handler
+      Runtime: python3.12
+      Role: !GetAtt LambdaExecutionRole.Arn
+
+      Environment:
+        Variables:
+          S3Bucket: !Ref FuelPriceData
+      Timeout: 300
+
+  # Lambda to fetch pricing data (once hourly) e.g. GetSitesPrices
+  FuelPriceDataFetcher:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambda/
+      Handler: price_data.lambda_handler
       Runtime: python3.12
       # Allow the lambda to access our qld fuel token api
-      Policies:
-        - AmazonSSMReadOnlyAccess
+      Role: !GetAtt LambdaExecutionRole.Arn
 
-    Environment:
-      Variables:
-        S3Bucket: !Ref FuelPriceData
+      Environment:
+        Variables:
+          S3Bucket: !Ref FuelPriceData
+      Timeout: 300
+
+Outputs:
+  FuelPriceBucket:
+    Description: "S3 bucket name"
+    Value: !Ref FuelPriceData

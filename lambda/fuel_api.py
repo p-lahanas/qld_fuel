@@ -1,6 +1,25 @@
 from typing import Any, Dict, Optional
 
+import boto3
 import requests
+
+
+REGION_LEVEL_STATE = 3
+REGION_LEVEL_CITY = 2
+REGION_LEVEL_SUBURB = 1
+
+COUNTRY_ID_AUS = 21
+
+REGION_ID_BNE = 1
+REGION_LEVEL_BNE = REGION_LEVEL_CITY
+
+
+def get_api_token() -> str:
+    client = boto3.client("ssm")
+    response = client.get_parameter(
+        Name="qld_fuel_token", WithDecryption=True)
+
+    return response["Parameter"]["Value"]
 
 
 class FuelApi:
