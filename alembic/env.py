@@ -1,5 +1,7 @@
 from logging.config import fileConfig
 
+from geoalchemy2 import alembic_helpers
+
 from alembic import context
 from fuelpricesqld.database.models.base import Base
 from fuelpricesqld.database.session import make_db_engine
@@ -40,12 +42,15 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = settings.SQL_DB_DSN
+    url = settings.PSQL_DB_CONNECTION_STRING
     context.configure(
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        include_object=alembic_helpers.include_object,
+        process_revision_directives=alembic_helpers.writer,
+        render_item=alembic_helpers.render_item,
     )
 
     with context.begin_transaction():
@@ -60,10 +65,16 @@ def run_migrations_online() -> None:
 
     """
 
-    connectable = make_db_engine(settings.SQL_DB_DSN)
+    connectable = make_db_engine(settings.PSQL_DB_CONNECTION_STRING)
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            include_object=alembic_helpers.include_object,
+            process_revision_directives=alembic_helpers.writer,
+            render_item=alembic_helpers.render_item,
+        )
 
         with context.begin_transaction():
             context.run_migrations()
