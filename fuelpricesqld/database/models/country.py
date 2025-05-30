@@ -5,7 +5,7 @@ from fuelpricesqld.database.models.base import Base
 
 
 class Country(Base):
-    __tablename__ = "Countries"
+    __tablename__ = "countries"
 
     country_id: Mapped[int] = mapped_column(primary_key=True)
     iso3: Mapped[str] = mapped_column(sql.CHAR(3), unique=True)
