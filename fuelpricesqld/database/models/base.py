@@ -1,27 +1,18 @@
-# Import necessary modules from SQLAlchemy
-from sqlalchemy import create_engine, Column, Integer, String
-from sqlalchemy.orm import declarative_base, sessionmaker
+import uuid
 
-# Create an SQLite database engine; replace with your database URL
-engine = create_engine(
-    'postgresql://username:password@localhost:5432/default_database', echo=True)
-
-# Create a base class for declarative class definitions
-Base = declarative_base()
-
-# Define a model class that inherits from Base
+import sqlalchemy as sql
+from sqlalchemy.orm import DeclarativeBase, Mapped, MappedAsDataclass, mapped_column
 
 
-class User(Base):
-    __tablename__ = 'users'  # Define the name of the table
-
-    id = Column(Integer, primary_key=True)  # Define the primary key column
-    name = Column(String)  # Define a regular column
-    age = Column(Integer)  # Define another column
+class Base(MappedAsDataclass, DeclarativeBase):
+    pass
 
 
-# Create a session factory
-Session = sessionmaker(bind=engine)
-
-# Create the tables in the database
-Base.metadata.create_all(engine)
+class UuidPkMixin:
+    id: Mapped[uuid.UUID] = mapped_column(
+        sql.Uuid(as_uuid=True, native_uuid=True),
+        primary_key=True,
+        default_factory=uuid.uuid4,
+        server_default=sql.func.newid(),
+        init=False,
+    )
