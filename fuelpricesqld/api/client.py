@@ -1,7 +1,53 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Type
 
-import requests
 import polars as pl
+import requests
+
+BRANDS_SCHEMA: dict[str, Type] = {
+    "BrandId": pl.Int32,
+    "Name": pl.String,
+}
+
+REGIONS_SCHEMA: dict[str, Type] = {
+    "GeoRegionLevel": pl.Int32,
+    "GeoRegionId": pl.Int32,
+    "Name": pl.String,
+    "Abbrev": pl.String,
+    "GeoRegionParentId": pl.Int32,
+}
+
+FUELS_SCHEMA: dict[str, Type] = {"FuelId": pl.Int32, "Name": pl.String}
+
+SITE_SCHEMA: dict[str, Type] = {
+    "S": pl.Int32,
+    "A": pl.String,
+    "N": pl.String,
+    "B": pl.Int32,
+    "P": pl.String,
+    "G1": pl.Int32,
+    "G2": pl.Int32,
+    "G3": pl.Int32,
+    "G4": pl.Int32,
+    "G5": pl.Int32,
+    "Lat": pl.Float32,
+    "Lng": pl.Float32,
+    "M": pl.Datetime,
+    "GPI": pl.String,
+    "MO": pl.String,
+    "MC": pl.String,
+    "TO": pl.String,
+    "TC": pl.String,
+    "WO": pl.String,
+    "WC": pl.String,
+    "THO": pl.String,
+    "THC": pl.String,
+    "FO": pl.String,
+    "FC": pl.String,
+    "SO": pl.String,
+    "SC": pl.String,
+    "SUO": pl.String,
+    "SUC": pl.String,
+}
 
 
 class Client:
@@ -29,7 +75,9 @@ class Client:
         return self._get("/Subscriber/GetCountryBrands", {"countryId": country_id})
 
     def get_country_brands_lf(self, country_id: int) -> pl.LazyFrame:
-        return pl.LazyFrame(self.get_country_brands(country_id)["Brands"])
+        return pl.LazyFrame(
+            self.get_country_brands(country_id)["Brands"], schema=BRANDS_SCHEMA
+        )
 
     def get_country_geographic_regions(self, country_id: int) -> dict:
         """List of geographic region IDs along with levels, names, abbreviations and geographic region parent ids"""
@@ -39,7 +87,8 @@ class Client:
 
     def get_country_geographic_regions_lf(self, country_id: int) -> pl.LazyFrame:
         return pl.LazyFrame(
-            self.get_country_geographic_regions(country_id)["GeographicRegions"]
+            self.get_country_geographic_regions(country_id)["GeographicRegions"],
+            schema=REGIONS_SCHEMA,
         )
 
     def get_fuel_types(self, country_id: int) -> dict:
@@ -47,7 +96,9 @@ class Client:
         return self._get("/Subscriber/GetCountryFuelTypes", {"countryId": country_id})
 
     def get_fuel_types_lf(self, country_id: int) -> pl.LazyFrame:
-        return pl.LazyFrame(self.get_fuel_types(country_id)["Fuels"])
+        return pl.LazyFrame(
+            self.get_fuel_types(country_id)["Fuels"], schema=FUELS_SCHEMA
+        )
 
     def get_full_site_details(
         self, country_id: int, geo_region_level: int, geo_region_id: int
@@ -66,7 +117,10 @@ class Client:
         self, country_id: int, geo_region_level: int, geo_region_id: int
     ) -> pl.LazyFrame:
         return pl.LazyFrame(
-            self.get_full_site_details(country_id, geo_region_level, geo_region_id)["S"]
+            self.get_full_site_details(country_id, geo_region_level, geo_region_id)[
+                "S"
+            ],
+            schema=SITE_SCHEMA,
         )
 
     def get_sites_price(

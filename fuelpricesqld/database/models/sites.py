@@ -17,11 +17,11 @@ class Site(Base):
     address: Mapped[str] = mapped_column(sql.VARCHAR(50))
     postcode: Mapped[str] = mapped_column(sql.VARCHAR(16))
 
-    g1: Mapped[str] = mapped_column(sql.VARCHAR(16))
-    g2: Mapped[str] = mapped_column(sql.VARCHAR(16))
-    g3: Mapped[str] = mapped_column(sql.VARCHAR(16))
-    g4: Mapped[str] = mapped_column(sql.VARCHAR(16))
-    g5: Mapped[str] = mapped_column(sql.VARCHAR(16))
+    g1: Mapped[int]
+    g2: Mapped[int]
+    g3: Mapped[int]
+    g4: Mapped[int]
+    g5: Mapped[int]
 
     geo_location: Mapped[WKBElement] = mapped_column(
         Geometry(geometry_type="Point", srid=4326, spatial_index=True)
