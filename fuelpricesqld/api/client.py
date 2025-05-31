@@ -1,15 +1,7 @@
 from typing import Any, Dict, Optional
 
 import requests
-
-REGION_LEVEL_STATE = 3
-REGION_LEVEL_CITY = 2
-REGION_LEVEL_SUBURB = 1
-
-COUNTRY_ID_AUS = 21
-
-REGION_ID_BNE = 1
-REGION_LEVEL_BNE = REGION_LEVEL_CITY
+import polars as pl
 
 
 class Client:
@@ -36,15 +28,26 @@ class Client:
         """Get all fuel brands for the specified country."""
         return self._get("/Subscriber/GetCountryBrands", {"countryId": country_id})
 
+    def get_country_brands_lf(self, country_id: int) -> pl.LazyFrame:
+        return pl.LazyFrame(self.get_country_brands(country_id)["Brands"])
+
     def get_country_geographic_regions(self, country_id: int) -> dict:
         """List of geographic region IDs along with levels, names, abbreviations and geographic region parent ids"""
         return self._get(
             "/Subscriber/GetCountryGeographicRegions", {"countryId": country_id}
         )
 
+    def get_country_geographic_regions_lf(self, country_id: int) -> pl.LazyFrame:
+        return pl.LazyFrame(
+            self.get_country_geographic_regions(country_id)["GeographicRegions"]
+        )
+
     def get_fuel_types(self, country_id: int) -> dict:
         """A list of fuel type IDs and names"""
         return self._get("/Subscriber/GetCountryFuelTypes", {"countryId": country_id})
+
+    def get_fuel_types_lf(self, country_id: int) -> pl.LazyFrame:
+        return pl.LazyFrame(self.get_fuel_types(country_id)["Fuels"])
 
     def get_full_site_details(
         self, country_id: int, geo_region_level: int, geo_region_id: int
@@ -57,6 +60,13 @@ class Client:
                 "geoRegionLevel": geo_region_level,
                 "geoRegionId": geo_region_id,
             },
+        )
+
+    def get_full_site_details_lf(
+        self, country_id: int, geo_region_level: int, geo_region_id: int
+    ) -> pl.LazyFrame:
+        return pl.LazyFrame(
+            self.get_full_site_details(country_id, geo_region_level, geo_region_id)["S"]
         )
 
     def get_sites_price(
