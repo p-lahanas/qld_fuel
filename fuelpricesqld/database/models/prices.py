@@ -1,11 +1,12 @@
-import sqlalchemy as sql
 from datetime import datetime
+
+import sqlalchemy as sql
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from fuelpricesqld.database.models.base import Base, UuidPkMixin
 from fuelpricesqld.database.models.country import Country
-from fuelpricesqld.database.models.sites import Site
 from fuelpricesqld.database.models.fuels import Fuel
+from fuelpricesqld.database.models.sites import Site
 
 
 class Price(Base, UuidPkMixin):
