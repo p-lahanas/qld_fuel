@@ -2,14 +2,13 @@ import json
 import logging
 import os
 
-import pandas as pd
 import polars as pl
 from sqlalchemy.orm import Session
 
 import fuelpricesqld.api as fa
 
 # from etls.lib import get_api_token
-from fuelpricesqld.database.models import Base, Brand, Fuel, Region, Site
+from fuelpricesqld.database.models import Brand, Fuel, Region, Site
 from fuelpricesqld.database.session import make_db_engine
 from fuelpricesqld.settings import Settings
 
@@ -29,39 +28,76 @@ def postgres_upsert(table, conn, keys, data_iter):
     conn.execute(upsert_statement)
 
 
-def reference_data_etl(session: Session):
-    # TODO: SWITCH OUT for AWS api token retrieval
-    api_client = fa.Client(os.environ.get("QLDTOKEN", ""))
+def etl_brands(session: Session, api_client: fa.Client):
+    # Extract from API
+    lf_brands = api_client.get_country_brands_lf(fa.COUNTRY_ID_AUS)
 
-    # --------- EXTRACT (with a little bit of transform)
-    # lf_brands = api_client.get_country_brands_lf(fa.COUNTRY_ID_AUS)
+    # Transform column headings & add country_id
+    lf_brands = lf_brands.rename({"BrandId": "brand_id", "Name": "name"})
+    lf_brands = lf_brands.with_columns(pl.lit(fa.COUNTRY_ID_AUS).alias("country_id"))
 
-    # lf_fuels = api_client.get_fuel_types_lf(fa.COUNTRY_ID_AUS)
+    # Load into the DB
+    lf_brands.collect().to_pandas(use_pyarrow_extension_array=True).to_sql(
+        name=Brand.__tablename__,
+        con=session.connection(),
+        if_exists="append",
+        index=False,
+        method=postgres_upsert,
+    )
 
-    # lf_regions = api_client.get_country_geographic_regions_lf(fa.COUNTRY_ID_AUS)
+
+def etl_fuels(session: Session, api_client: fa.Client):
+    # Extract from API
+    lf_fuels = api_client.get_fuel_types_lf(fa.COUNTRY_ID_AUS)
+
+    # Transform column headings & add country_id
+    lf_fuels = lf_fuels.rename({"FuelId": "fuel_id", "Name": "name"})
+    lf_fuels = lf_fuels.with_columns(pl.lit(fa.COUNTRY_ID_AUS).alias("country_id"))
+
+    # Load into the DB
+    lf_fuels.collect().to_pandas(use_pyarrow_extension_array=True).to_sql(
+        name=Fuel.__tablename__,
+        con=session.connection(),
+        if_exists="append",
+        index=False,
+        method=postgres_upsert,
+    )
+
+
+def etl_regions(session: Session, api_client: fa.Client):
+    # Extract from API
+    lf_regions = api_client.get_country_geographic_regions_lf(fa.COUNTRY_ID_AUS)
+
+    # Transform column headings & add country_id
+    lf_regions = lf_regions.rename(
+        {
+            "GeoRegionLevel": "region_level_id",
+            "GeoRegionId": "region_id",
+            "Name": "name",
+            "Abbrev": "abbrev",
+            "GeoRegionParentId": "region_parent_id",
+        }
+    )
+    lf_regions = lf_regions.with_columns(pl.lit(fa.COUNTRY_ID_AUS).alias("country_id"))
+
+    # Load into the DB
+    lf_regions.collect().to_pandas(use_pyarrow_extension_array=True).to_sql(
+        name=Region.__tablename__,
+        con=session.connection(),
+        if_exists="append",
+        index=False,
+        method=postgres_upsert,
+    )
+
+
+def etl_sites(session: Session, api_client: fa.Client):
+    # Extract from API
 
     lf_sites = api_client.get_full_site_details_lf(
         fa.COUNTRY_ID_AUS, fa.REGION_LEVEL_BNE, fa.REGION_ID_BNE
     )
 
-    # # -------- TRANSFORM
-    # lf_brands = lf_brands.rename({"BrandId": "brand_id", "Name": "name"})
-    # lf_brands = lf_brands.with_columns(pl.lit(fa.COUNTRY_ID_AUS).alias("country_id"))
-
-    # lf_fuels = lf_fuels.rename({"FuelId": "fuel_id", "Name": "name"})
-    # lf_fuels = lf_fuels.with_columns(pl.lit(fa.COUNTRY_ID_AUS).alias("country_id"))
-
-    # lf_regions = lf_regions.rename(
-    #     {
-    #         "GeoRegionLevel": "region_level_id",
-    #         "GeoRegionId": "region_id",
-    #         "Name": "name",
-    #         "Abbrev": "abbrev",
-    #         "GeoRegionParentId": "region_parent_id",
-    #     }
-    # )
-    # lf_regions = lf_regions.with_columns(pl.lit(fa.COUNTRY_ID_AUS).alias("country_id"))
-
+    # Transform column headings & add column_id
     lf_sites = lf_sites.drop(
         [
             "MO",
@@ -98,33 +134,13 @@ def reference_data_etl(session: Session):
     )
     # Add geo_location as a string "POINT(lon lat)" (WKT format)
     lf_sites = lf_sites.with_columns(
-        pl.format("POINT({} {})", pl.col("Lng"), pl.col("Lat")).alias("geo_location")
+        pl.format("POINT({} {})", pl.col("Lng"), pl.col("Lat")).alias("geo_location"),
+        pl.col("last_modified").str.strptime(pl.Datetime, "%Y-%m-%dT%H:%M:%S%.3f"),
     )
     lf_sites = lf_sites.drop(["Lng", "Lat"])
     lf_sites = lf_sites.with_columns(pl.lit(fa.COUNTRY_ID_AUS).alias("country_id"))
 
-    # --------- LOAD
-    # lf_brands.collect().to_pandas(use_pyarrow_extension_array=True).to_sql(
-    #     name=Brand.__tablename__,
-    #     con=session.connection(),
-    #     if_exists="append",
-    #     index=False,
-    #     method=postgres_upsert,
-    # )
-    # lf_fuels.collect().to_pandas(use_pyarrow_extension_array=True).to_sql(
-    #     name=Fuel.__tablename__,
-    #     con=session.connection(),
-    #     if_exists="append",
-    #     index=False,
-    #     method=postgres_upsert,
-    # )
-    # lf_regions.collect().to_pandas(use_pyarrow_extension_array=True).to_sql(
-    #     name=Region.__tablename__,
-    #     con=session.connection(),
-    #     if_exists="append",
-    #     index=False,
-    #     method=postgres_upsert,
-    # )
+    # Load it into the db
     lf_sites.collect().to_pandas(use_pyarrow_extension_array=True).to_sql(
         name=Site.__tablename__,
         con=session.connection(),
@@ -132,6 +148,18 @@ def reference_data_etl(session: Session):
         index=False,
         method=postgres_upsert,
     )
+
+
+def reference_data_etl(session: Session):
+    # TODO: SWITCH OUT for AWS api token retrieval
+    api_client = fa.Client(os.environ.get("QLDTOKEN", ""))
+
+    # Order of these does matter due to foreign key constraints
+    # Put sites after brand & ensure countries table is seeded
+    etl_brands(session, api_client)
+    etl_fuels(session, api_client)
+    etl_regions(session, api_client)
+    etl_sites(session, api_client)
 
 
 def price_data_etl(session: Session):

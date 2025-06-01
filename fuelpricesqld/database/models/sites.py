@@ -27,10 +27,10 @@ class Site(Base):
         Geometry(geometry_type="Point", srid=4326, spatial_index=True)
     )
 
-    last_modified: Mapped[datetime] = mapped_column(sql.DateTime)
+    last_modified: Mapped[datetime | None] = mapped_column(sql.DateTime)
 
     # Shouldn't be longer than 27 chars
-    google_place_id: Mapped[str] = mapped_column(sql.VARCHAR(27), unique=True)
+    google_place_id: Mapped[str] = mapped_column(sql.VARCHAR(40), unique=True)
 
     brand_id: Mapped[int] = mapped_column(sql.ForeignKey("brands.brand_id"))
     brand: Mapped[Brand] = relationship()

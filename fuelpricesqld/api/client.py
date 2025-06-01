@@ -31,7 +31,7 @@ SITE_SCHEMA: dict[str, Type] = {
     "G5": pl.Int32,
     "Lat": pl.Float32,
     "Lng": pl.Float32,
-    "M": pl.Datetime,
+    "M": pl.String,  # manually cast this later
     "GPI": pl.String,
     "MO": pl.String,
     "MC": pl.String,
@@ -121,6 +121,7 @@ class Client:
                 "S"
             ],
             schema=SITE_SCHEMA,
+            infer_schema_length=1,
         )
 
     def get_sites_price(
