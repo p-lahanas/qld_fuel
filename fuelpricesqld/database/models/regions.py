@@ -12,10 +12,10 @@ class Region(Base):
     region_level_id: Mapped[int] = mapped_column(primary_key=True)
     region_id: Mapped[int] = mapped_column(primary_key=True)
 
-    region_parent_id: Mapped[int]
+    region_parent_id: Mapped[int | None]
 
-    name: Mapped[str] = mapped_column(sql.VARCHAR(16))
-    abbrev: Mapped[str] = mapped_column(sql.CHAR(3))
+    name: Mapped[str] = mapped_column(sql.VARCHAR(30))
+    abbrev: Mapped[str] = mapped_column(sql.CHAR(30))
 
     country_id: Mapped[int] = mapped_column(sql.ForeignKey("countries.country_id"))
     country: Mapped[Country] = relationship()
