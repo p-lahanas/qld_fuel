@@ -49,6 +49,14 @@ SITE_SCHEMA: dict[str, Type] = {
     "SUC": pl.String,
 }
 
+PRICE_SCHEMA: dict[str, Type] = {
+    "SiteId": pl.Int32,
+    "FuelId": pl.Int32,
+    "CollectionMethod": pl.String,
+    "TransactionDateUtc": pl.String,
+    "Price": pl.Int32,
+}
+
 
 class Client:
     base_url = "https://fppdirectapi-prod.fuelpricesqld.com.au"
@@ -121,10 +129,9 @@ class Client:
                 "S"
             ],
             schema=SITE_SCHEMA,
-            infer_schema_length=1,
         )
 
-    def get_sites_price(
+    def get_sites_prices(
         self, country_id: int, geo_region_level: int, geo_region_id: int
     ) -> dict:
         """A list of site IDs along with fuel ids and prices."""
@@ -135,4 +142,14 @@ class Client:
                 "geoRegionLevel": geo_region_level,
                 "geoRegionId": geo_region_id,
             },
+        )
+
+    def get_sites_prices_lf(
+        self, country_id: int, geo_region_level: int, geo_region_id: int
+    ) -> pl.LazyFrame:
+        return pl.LazyFrame(
+            self.get_sites_prices(country_id, geo_region_level, geo_region_id)[
+                "SitePrices"
+            ],
+            schema=PRICE_SCHEMA,
         )
