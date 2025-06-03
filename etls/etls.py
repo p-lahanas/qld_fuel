@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 
@@ -9,6 +8,7 @@ import fuelpricesqld.api as fa
 
 # from etls.lib import get_api_token
 from fuelpricesqld.database.models import Brand, Fuel, Region, Site
+from fuelpricesqld.database.models.prices import Price
 from fuelpricesqld.database.session import make_db_engine
 from fuelpricesqld.settings import Settings
 
@@ -150,7 +150,32 @@ def etl_sites(session: Session, api_client: fa.Client):
     )
 
 
-def reference_data_etl(session: Session):
+def etl_prices(session: Session, api_client: fa.Client):
+    lf_prices = api_client.get_sites_prices_lf(
+        fa.COUNTRY_ID_AUS, fa.REGION_LEVEL_BNE, fa.REGION_ID_BNE
+    )
+
+    # Transform column headings & add country_id
+    lf_prices = lf_prices.rename(
+        {
+            "SiteId": "site_id",
+            "FuelId": "fuel_id",
+            "CollectionMethod": "collection_method",
+            "TransactionDateUtc": "transaction_date_utc",
+            "Price": "price",
+        }
+    )
+    lf_prices = lf_prices.with_columns(pl.lit(fa.COUNTRY_ID_AUS).alias("country_id"))
+    lf_prices.collect().to_pandas(use_pyarrow_extension_array=True).to_sql(
+        name=Price.__tablename__,
+        con=session.connection(),
+        if_exists="append",
+        index=False,
+        method=postgres_upsert,
+    )
+
+
+def etl(session: Session):
     # TODO: SWITCH OUT for AWS api token retrieval
     api_client = fa.Client(os.environ.get("QLDTOKEN", ""))
 
@@ -161,9 +186,8 @@ def reference_data_etl(session: Session):
     etl_regions(session, api_client)
     etl_sites(session, api_client)
 
-
-def price_data_etl(session: Session):
-    pass
+    # Do prices last after we have the latest reference data
+    etl_prices(session, api_client)
 
 
 if __name__ == "__main__":
@@ -176,5 +200,5 @@ if __name__ == "__main__":
     engine = make_db_engine(settings.PSQL_DB_CONNECTION_STRING)
 
     with Session(engine) as session:
-        reference_data_etl(session)
+        etl(session)
         session.commit()
