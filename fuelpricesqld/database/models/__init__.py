@@ -1,4 +1,4 @@
-from .base import Base, UuidPkMixin
+from .base import Base
 from .country import Country
 from .brand import Brand
 from .regions import Region

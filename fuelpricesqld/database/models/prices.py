@@ -3,14 +3,16 @@ from datetime import datetime
 import sqlalchemy as sql
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from fuelpricesqld.database.models.base import Base, UuidPkMixin
+from fuelpricesqld.database.models.base import Base
 from fuelpricesqld.database.models.country import Country
 from fuelpricesqld.database.models.fuels import Fuel
 from fuelpricesqld.database.models.sites import Site
 
 
-class Price(Base, UuidPkMixin):
+class Price(Base):
     __tablename__ = "prices"
+
+    id: Mapped[int] = mapped_column(sql.Integer, primary_key=True, autoincrement=True)
 
     site_id: Mapped[int] = mapped_column(sql.ForeignKey("sites.site_id"))
     site: Mapped[Site] = relationship()
