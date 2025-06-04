@@ -7,7 +7,6 @@ import fuelpricesqld.api as fa
 from etls.lib import get_api_token
 from fuelpricesqld.database.session import make_db_engine
 from fuelpricesqld.settings import Settings
-import os
 
 
 def lambda_handler(event, context):
