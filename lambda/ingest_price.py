@@ -5,13 +5,14 @@ from datetime import datetime
 
 import boto3
 import fuelpricesqld.api as fa
-from fuelpricesqld.lib import get_api_token
+
+from share.lib import get_api_token
 
 
 def create_price_object() -> str:
     dt_now = datetime.now()
     date_path = dt_now.strftime("%Y/%m/%d/%H")
-    file_name = f'{dt_now.strftime("%H:%M")}_{uuid.uuid4()}.json'
+    file_name = f"{dt_now.strftime('%H:%M')}_{uuid.uuid4()}.json"
 
     return f"prices/{date_path}/{file_name}"
 

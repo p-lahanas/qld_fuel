@@ -33,40 +33,69 @@ Resources:
                   - ssm:List*
                 Resource: "*"
 
-  # Create an S3 bucket to hold API data
-  FuelPriceData:
-    Type: AWS::S3::Bucket
-    Properties:
-      AccessControl: Private
-
-  # Lambda to fetch our reference data (once daily) e.g. GetBrands
-  FuelPriceReferenceDataFetcher:
+    # Lambda to fetch pricing data (once hourly) e.g. GetSitesPrices
+  FuelPriceEtl:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: lambda/
-      Handler: reference_data.lambda_handler
-      Runtime: python3.12
-      Role: !GetAtt LambdaExecutionRole.Arn
-
-      Environment:
-        Variables:
-          S3Bucket: !Ref FuelPriceData
-      Timeout: 300
-
-  # Lambda to fetch pricing data (once hourly) e.g. GetSitesPrices
-  FuelPriceDataFetcher:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: lambda/
-      Handler: price_data.lambda_handler
-      Runtime: python3.12
+      CodeUri: ../lambda
+      Handler: etl_price.lambda_handler
+      Runtime: python3.10
       # Allow the lambda to access our qld fuel token api
       Role: !GetAtt LambdaExecutionRole.Arn
 
-      Environment:
-        Variables:
-          S3Bucket: !Ref FuelPriceData
+      # Environment:
+      #   Variables:
+      #     S3Bucket: !Ref FuelPriceData
       Timeout: 300
+      # Lambda to fetch pricing data (once hourly) e.g. GetSitesPrices
+  FuelReferenceEtl:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../lambda
+      Handler: etl_reference.lambda_handler
+      Runtime: python3.10
+      # Allow the lambda to access our qld fuel token api
+      Role: !GetAtt LambdaExecutionRole.Arn
+
+      # Environment:
+      #   Variables:
+      #     S3Bucket: !Ref FuelPriceData
+      Timeout: 300
+
+  # # Create an S3 bucket to hold API data
+  # FuelPriceData:
+  #   Type: AWS::S3::Bucket
+  #   Properties:
+  #     AccessControl: Private
+
+  # # Lambda to fetch our reference data (once daily) e.g. GetBrands
+  # FuelPriceReferenceDataFetcher:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     CodeUri: lambda/
+  #     Handler: reference_data.lambda_handler
+  #     Runtime: python3.12
+  #     Role: !GetAtt LambdaExecutionRole.Arn
+
+  #     Environment:
+  #       Variables:
+  #         S3Bucket: !Ref FuelPriceData
+  #     Timeout: 300
+
+  # # Lambda to fetch pricing data (once hourly) e.g. GetSitesPrices
+  # FuelPriceDataFetcher:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     CodeUri: lambda/
+  #     Handler: price_data.lambda_handler
+  #     Runtime: python3.12
+  #     # Allow the lambda to access our qld fuel token api
+  #     Role: !GetAtt LambdaExecutionRole.Arn
+
+  #     Environment:
+  #       Variables:
+  #         S3Bucket: !Ref FuelPriceData
+  #     Timeout: 300
 
 Outputs:
   FuelPriceBucket:

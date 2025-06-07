@@ -5,7 +5,7 @@ from datetime import datetime
 
 import boto3
 import fuelpricesqld.api as fa
-from fuelpricesqld.lib import get_api_token
+from share.lib import get_api_token
 
 
 def create_reference_object(name: str) -> str:

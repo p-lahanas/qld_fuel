@@ -1,12 +1,11 @@
 import json
 
+import fuelpricesqld.api as fa
+import fuelpricesqld.etls as etls
+from fuelpricesqld.database.session import make_db_engine
 from sqlalchemy.orm import Session
 
-import etls
-import fuelpricesqld.api as fa
-from fuelpricesqld.lib import get_api_token
-from fuelpricesqld.database.session import make_db_engine
-from fuelpricesqld.settings import Settings
+from share.lib import Settings, get_api_token
 
 
 def lambda_handler(event, context):
