@@ -1,20 +1,21 @@
-import json
-
 import fuelpricesqld.api as fa
 import fuelpricesqld.etls as etls
 from fuelpricesqld.database.session import make_db_engine
 from sqlalchemy.orm import Session
 
-from share.lib import Settings, get_api_token
+from app import Settings
 
 
-def lambda_handler(event, context):
-    api_token = get_api_token()
-    api_client = fa.Client(api_token)
-
+def etl():
     settings = Settings()  # type: ignore
 
-    engine = make_db_engine(settings.PSQL_DB_CONNECTION_STRING)
+    # Create fuelpricesqld api client
+    api_token = settings.FUEL_PRICES_QLD_API_TOKEN
+    api_client = fa.Client(api_token)
+
+    # Connect to DB
+    db_connection_string = settings.PSQL_DB_CONNECTION_STRING
+    engine = make_db_engine(db_connection_string)
 
     with Session(engine) as session:
         # Order of these does matter due to foreign key constraints
@@ -26,4 +27,6 @@ def lambda_handler(event, context):
 
         session.commit()
 
-    return {"statusCode": 200, "body": json.dumps("Data ingestion complete")}
+
+if __name__ == "__main__":
+    etl()
