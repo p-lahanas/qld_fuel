@@ -12,19 +12,30 @@ services:
       - postgis_network
     restart: unless-stopped
 
+  migrations:
+    build:
+      context: .
+      dockerfile: ./alembic/Dockerfile
+    container_name: fuel_price_alembic_migrations
+    depends_on:
+      - database
+    env_file: .env.migrations
+    networks:
+      - postgis_network
+
   etl:
     build:
       context: . # Set to root of repo
       dockerfile: ./etls/Dockerfile
     container_name: fuelprice_etl
     depends_on:
-      - database
+      - migrations
     volumes:
       - ./etl_scripts:/app/etl_scripts
     env_file: .env.etl
     networks:
       - postgis_network
-    restart: unless-stopped
+    # restart: unless-stopped
 
 networks:
   postgis_network:
