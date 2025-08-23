@@ -1,0 +1,17 @@
+services:
+  database:
+    image: postgis/postgis:latest
+    container_name: fuel_price_postgis
+    env_file: .env.postgis
+    ports:
+      - "5432:5432"
+    volumes:
+      - ${PWD}/db_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d # seed scripts go here
+    networks:
+      - postgis_network
+    restart: unless-stopped
+
+networks:
+  postgis_network:
+    driver: bridge

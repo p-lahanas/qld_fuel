@@ -1,11 +1,21 @@
 from logging.config import fileConfig
 
-from geoalchemy2 import alembic_helpers
-
-from alembic import context
 from fuelpricesqld.database.models.base import Base
 from fuelpricesqld.database.session import make_db_engine
-from fuelpricesqld.settings import Settings
+from geoalchemy2 import alembic_helpers
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from alembic import context
+
+
+class Settings(BaseSettings):
+    # MS SQL DB connection DSN
+    PSQL_DB_CONNECTION_STRING: str
+
+    model_config = SettingsConfigDict(
+        env_file=(".env", ".env.prod"),  # , env_file_encoding="utf-8"
+    )
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
