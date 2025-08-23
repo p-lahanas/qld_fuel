@@ -4,10 +4,24 @@ services:
     container_name: fuel_price_postgis
     env_file: .env.postgis
     ports:
-      - "5432:5432"
+      - "5432:5432" #TODO: remove this from prod so we don't forward this to the host unecessarily
     volumes:
       - ${PWD}/db_data:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d # seed scripts go here
+    networks:
+      - postgis_network
+    restart: unless-stopped
+
+  etl:
+    build:
+      context: . # Set to root of repo
+      dockerfile: ./etls/Dockerfile
+    container_name: fuelprice_etl
+    depends_on:
+      - database
+    volumes:
+      - ./etl_scripts:/app/etl_scripts
+    env_file: .env.etl
     networks:
       - postgis_network
     restart: unless-stopped
