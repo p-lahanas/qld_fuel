@@ -7,7 +7,6 @@ services:
       - "5432:5432" #TODO: remove this from prod so we don't forward this to the host unecessarily
     volumes:
       - ${PWD}/db_data:/var/lib/postgresql/data
-      - ./db/init:/docker-entrypoint-initdb.d # seed scripts go here
     networks:
       - postgis_network
     restart: unless-stopped
@@ -20,6 +19,20 @@ services:
     depends_on:
       - database
     env_file: .env.migrations
+    networks:
+      - postgis_network
+
+  grafana:
+    image: grafana/grafana
+    container_name: fuel_price_grafana
+    ports:
+      - "3000:3000"
+    #TODO: Maybe map this to host
+    # volumes:
+    # - ${PWD}/grafana_data:/var/lib/grafana
+    #TODO: UPDATE THIS TO ENVIRONMENT VARIABLES
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
     networks:
       - postgis_network
 
