@@ -7,6 +7,7 @@ services:
       - "5432:5432" #TODO: remove this from prod so we don't forward this to the host unecessarily
     volumes:
       - ${PWD}/db_data:/var/lib/postgresql/data
+      - ${PWD}/db/init/create_readonly_user.sh:/docker-entrypoint-initdb.d/create_readonly_user.sh
     networks:
       - postgis_network
     restart: unless-stopped
@@ -22,33 +23,54 @@ services:
     networks:
       - postgis_network
 
+  # etl:
+  #   build:
+  #     context: . # Set to root of repo
+  #     dockerfile: ./etls/Dockerfile
+  #   container_name: fuelprice_etl
+  #   depends_on:
+  #     - migrations
+  #   volumes:
+  #     - ./etl_scripts:/app/etl_scripts
+  #   env_file: .env.etl
+  #   networks:
+  #     - postgis_network
+  #   # restart: unless-stopped
+
   grafana:
     image: grafana/grafana
     container_name: fuel_price_grafana
-    ports:
-      - "3000:3000"
+    # ports:
+    #   - "3000:3000"
+    expose:
+      - 3000
     #TODO: Maybe map this to host
-    # volumes:
-    # - ${PWD}/grafana_data:/var/lib/grafana
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    env_file: .env.postgis
     #TODO: UPDATE THIS TO ENVIRONMENT VARIABLES
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      # - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
     networks:
       - postgis_network
 
-  etl:
-    build:
-      context: . # Set to root of repo
-      dockerfile: ./etls/Dockerfile
-    container_name: fuelprice_etl
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    restart: unless-stopped
     depends_on:
-      - migrations
+      - grafana
+    ports:
+      - "80:80"
     volumes:
-      - ./etl_scripts:/app/etl_scripts
-    env_file: .env.etl
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
     networks:
       - postgis_network
-    # restart: unless-stopped
+
+  # http://localhost:3000/d/e595cfa3-6b5d-4c2b-8c4e-3aa5597f46ee/fuel-prices-home?orgId=1
 
 networks:
   postgis_network:
